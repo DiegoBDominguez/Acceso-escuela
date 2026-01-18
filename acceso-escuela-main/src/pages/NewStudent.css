@@ -1,0 +1,136 @@
+/* ================= CONTENEDOR GENERAL ================= */
+
+.new-student-container {
+  width: 100%;
+  max-width: 900px;          /* MÁS GRANDE */
+  margin: 0 auto;
+  padding: 10px;
+}
+
+/* ================= FLECHA ATRÁS ================= */
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+/* ================= FORMULARIO ================= */
+
+.new-student-form {
+  display: grid;
+  gap: 22px;
+}
+
+/* ================= CAMPOS ================= */
+
+.new-student-form label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e3a8a;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.new-student-form input,
+.new-student-form select {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  font-size: 15px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: #fff;
+}
+
+/* FOCUS */
+
+.new-student-form input:focus,
+.new-student-form select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+/* ================= ERRORES ================= */
+
+.new-student-form input.error,
+.new-student-form select.error {
+  border-color: #dc2626;
+}
+
+.error-text {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #dc2626;
+}
+
+/* ================= GRID DOBLE / TRIPLE ================= */
+
+/* Dos columnas grandes */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+
+/* ================= BOTÓN ================= */
+
+.form-actions {
+  margin-top: 10px;
+}
+
+.form-actions button {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 12px;
+}
+
+/* ================= RESPONSIVE ================= */
+
+/* LAPTOP PEQUEÑA / TABLET */
+@media (max-width: 1024px) {
+  .new-student-container {
+    max-width: 100%;
+  }
+}
+
+/* TABLET */
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .new-student-form {
+    gap: 18px;
+  }
+}
+
+/* MÓVIL */
+@media (max-width: 480px) {
+  .new-student-form input,
+  .new-student-form select {
+    font-size: 14px;
+    padding: 12px;
+  }
+
+  .form-actions button {
+    font-size: 15px;
+    padding: 13px;
+  }
+
+  .back-link {
+    font-size: 13px;
+  }
+}
