@@ -1,47 +1,67 @@
-import { useNavigate } from "react-router-dom"
+import axios from "axios"
 import { useState } from "react"
 import "./Login.css"
 
 const Login = () => {
-  const navigate = useNavigate()
-
-  const [user, setUser] = useState("")
+  const [matricula, setMatricula] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [showHelp, setShowHelp] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  // Matrícula alumno (9 números) o ID admin (ADMxxx)
-  const validateUser = (value: string) => {
-    const matriculaRegex = /^[0-9]{9}$/
-    const adminRegex = /^ADM[0-9]{3,}$/i
-
-    return {
-      isMatricula: matriculaRegex.test(value),
-      isAdmin: adminRegex.test(value)
-    }
-  }
-
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('🚀 Botón presionado')
 
-    const { isMatricula, isAdmin } = validateUser(user)
-
-    if (!isMatricula && !isAdmin) {
-      setError("Ingresa una matrícula válida o un ID de administrador.")
+    if (!matricula || !password) {
+      setError("Por favor completa todos los campos")
       return
     }
 
-    if (password.length !== 8) {
-      setError("La contraseña (NIP) debe contener exactamente 8 caracteres.")
-      return
-    }
+    setLoading(true)
+    console.log('📤 Enviando solicitud con:', { matricula, password })
 
-    setError("")
+    try {
+      const respuesta = await axios.post('http://localhost:3001/api/auth/login', { 
+        matricula: matricula.trim(), 
+        password: password.trim() 
+      })
 
-    if (isMatricula) {
-      navigate("/students")
-    } else if (isAdmin) {
-      navigate("/admin")
+      console.log('✅ Respuesta del servidor:', respuesta.status, respuesta.data)
+
+      if (respuesta.status === 200 && respuesta.data.token) {
+        localStorage.setItem('token', respuesta.data.token)
+        localStorage.setItem('usuario', JSON.stringify(respuesta.data))
+        setError("")
+        
+        // Redirigir según el rol
+        const rol = respuesta.data.rol
+        console.log('🔐 Rol del usuario:', rol)
+        console.log('📦 Datos completos:', respuesta.data)
+        
+        setTimeout(() => {
+          if (rol === 'ALUMNO') {
+            console.log('➡️ Redirigiendo a /students')
+            window.location.href = '/students'
+          } else if (rol === 'ADMIN') {
+            console.log('➡️ Redirigiendo a /admin')
+            window.location.href = '/admin'
+          } else if (rol === 'ENTRADA') {
+            console.log('➡️ Redirigiendo a /entrada')
+            window.location.href = '/entrada'
+          } else {
+            console.error('❌ Rol desconocido:', rol)
+          }
+        }, 1000)
+      }
+    } catch (error: any) {
+      console.error('❌ Error:', error)
+      console.log('Response:', error.response?.data)
+      setError("Matrícula o contraseña incorrecta")
+      setMatricula("")
+      setPassword("")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -74,29 +94,30 @@ const Login = () => {
           <h3>Inicio de Sesión</h3>
           <p>Ingresa tus credenciales institucionales</p>
 
-          <label>Matrícula / ID de Administrador</label>
+          <label>Matrícula</label>
           <input
             type="text"
-            placeholder="Ej. 202400123 o ADM001"
-            value={user}
-            onChange={(e) => setUser(e.target.value)}
+            placeholder="Ej. 202400123"
+            value={matricula}
+            onChange={(e) => setMatricula(e.target.value)}
             className={error ? "input-error" : ""}
+            disabled={loading}
           />
 
-          <label>Contraseña (NIP)</label>
+          <label>Contraseña</label>
           <input
             type="password"
-            placeholder="8 caracteres"
+            placeholder="Tu contraseña"
             value={password}
-            maxLength={8}
             onChange={(e) => setPassword(e.target.value)}
             className={error ? "input-error" : ""}
+            disabled={loading}
           />
 
           {error && <span className="error-text">{error}</span>}
 
-          <button type="submit">
-            Acceder
+          <button type="submit" disabled={loading}>
+            {loading ? "Conectando..." : "Acceder"}
           </button>
 
           {/* ENLACE DE AYUDA */}
@@ -116,19 +137,19 @@ const Login = () => {
           <div className="modal">
             <h3>Información Importante</h3>
 
-            <p>Para iniciar sesión al de Control de Asistencia realiza los siguientes pasos:</p>
+            <p>Para iniciar sesión al Sistema de Control de Asistencia realiza los siguientes pasos:</p>
 
             <ol>
-              <li>Ingresa tu matrícula / ID </li>
-              <li>Coloca tu Contraseña </li>
+              <li>Ingresa tu matrícula</li>
+              <li>Coloca tu contraseña</li>
               <li>Da clic en el botón Acceder</li>
             </ol>
 
             <p className="modal-warning">
               <strong>¡Importante!</strong><br />
               Si no recuerdas la contraseña de acceso de tu cuenta 
-              por favor contacta a la/el Secretaria(o)
-              Académica(o) de la escula para solicitar el reinicio.
+              por favor contacta a la Secretaría Académica
+              para solicitar el reinicio.
             </p>
 
             <button onClick={() => setShowHelp(false)}>
