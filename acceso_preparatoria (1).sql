@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 22-01-2026 a las 06:45:01
+-- Tiempo de generación: 24-01-2026 a las 00:47:49
 -- Versión del servidor: 12.0.2-MariaDB
 -- Versión de PHP: 8.0.30
 
@@ -36,6 +36,14 @@ CREATE TABLE `administrativos` (
   `apellido_materno` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
+--
+-- Volcado de datos para la tabla `administrativos`
+--
+
+INSERT INTO `administrativos` (`id`, `usuario_id`, `puesto`, `nombre`, `apellido_paterno`, `apellido_materno`) VALUES
+(4, 4, 'Director', 'Juan', 'Hernández', 'López'),
+(5, 4, 'Director', 'Juan', 'Hernández', 'López');
+
 -- --------------------------------------------------------
 
 --
@@ -59,7 +67,8 @@ CREATE TABLE `alumnos` (
 --
 
 INSERT INTO `alumnos` (`id`, `usuario_id`, `correo_institucional`, `grado`, `grupo`, `turno`, `nombre`, `apellido_paterno`, `apellido_materno`) VALUES
-(3, 1, 'diego.bustamante@escuela.edu.mx', 3, 'A', 'MATUTINO', 'Diego', 'Bustamante', 'Perez');
+(3, 1, 'diego.bustamante@escuela.edu.mx', 3, 'A', 'MATUTINO', 'Diego', 'Bustamante', 'Perez'),
+(4, 6, 'prueba@test.com', 3, 'A', 'MATUTINO', 'Prueba', 'Test', 'Usuario');
 
 -- --------------------------------------------------------
 
@@ -75,6 +84,13 @@ CREATE TABLE `asistencias` (
   `hora_salida` time DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
+--
+-- Volcado de datos para la tabla `asistencias`
+--
+
+INSERT INTO `asistencias` (`id`, `alumno_id`, `fecha`, `hora_entrada`, `hora_salida`) VALUES
+(1, 3, '2026-01-23', '17:15:26', '17:15:26');
+
 -- --------------------------------------------------------
 
 --
@@ -89,6 +105,13 @@ CREATE TABLE `personal_entrada` (
   `apellido_materno` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
+--
+-- Volcado de datos para la tabla `personal_entrada`
+--
+
+INSERT INTO `personal_entrada` (`id`, `usuario_id`, `nombre`, `apellido_paterno`, `apellido_materno`) VALUES
+(1, 5, 'Carlos', 'Ramírez', 'Gómez');
+
 -- --------------------------------------------------------
 
 --
@@ -101,6 +124,13 @@ CREATE TABLE `qr_tokens` (
   `token` varchar(255) NOT NULL,
   `expira_en` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+--
+-- Volcado de datos para la tabla `qr_tokens`
+--
+
+INSERT INTO `qr_tokens` (`id`, `alumno_id`, `token`, `expira_en`) VALUES
+(1, 3, '7c8256153619fea18ff911efa81005136a9b5caa10d901fc78ff694fbfd05184', '2027-01-23 13:22:29');
 
 -- --------------------------------------------------------
 
@@ -122,7 +152,10 @@ CREATE TABLE `usuarios` (
 --
 
 INSERT INTO `usuarios` (`id`, `matricula`, `password`, `rol`, `activo`, `created_at`) VALUES
-(1, '202133193', '$2b$10$mJrJ/BhhNB/t2/FQOWbuQuxWnXQ/r29fAlqS9li4B2./Lcy9P/67q', 'ALUMNO', 1, '2026-01-21 22:42:58');
+(1, '202133193', '$2b$10$spXuyjk8Mx662dzPBcHivuxiLs2NOLNidoJ0a3FyFDq8t4jbmw.wa', 'ALUMNO', 1, '2026-01-21 22:42:58'),
+(4, 'ADMIN001', '$2b$10$p8osbo.XXtIlX3Yjf2wnJecsjvpilPGh0eTGZaYMSwPusM56Hq0b.', 'ADMIN', 1, '2026-01-23 17:31:41'),
+(5, 'ENTRADA001', '$2b$10$0GCEJinfQpeDJ2gjSZWaI.e.C4Ub/p7AdcmXLM0Tr11JQ5STRmAuG', 'ENTRADA', 1, '2026-01-23 18:39:53'),
+(6, '1233456789', '$2b$10$.0FXYSHqmmSaM1AbeKJ8De1HqpqmhMPs8x4BluBPGCqpyn8/E/CSG', 'ALUMNO', 1, '2026-01-23 23:20:57');
 
 --
 -- Índices para tablas volcadas
@@ -179,37 +212,37 @@ ALTER TABLE `usuarios`
 -- AUTO_INCREMENT de la tabla `administrativos`
 --
 ALTER TABLE `administrativos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de la tabla `alumnos`
 --
 ALTER TABLE `alumnos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `asistencias`
 --
 ALTER TABLE `asistencias`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `personal_entrada`
 --
 ALTER TABLE `personal_entrada`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `qr_tokens`
 --
 ALTER TABLE `qr_tokens`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- Restricciones para tablas volcadas

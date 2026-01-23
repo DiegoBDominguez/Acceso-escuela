@@ -1,5 +1,6 @@
 import axios from "axios"
 import { useState } from "react"
+import { API_ENDPOINTS } from "../config/api"
 import "./Login.css"
 
 const Login = () => {
@@ -22,7 +23,7 @@ const Login = () => {
     console.log('📤 Enviando solicitud con:', { matricula, password })
 
     try {
-      const respuesta = await axios.post('http://localhost:3001/api/auth/login', { 
+      const respuesta = await axios.post(API_ENDPOINTS.AUTH_LOGIN, { 
         matricula: matricula.trim(), 
         password: password.trim() 
       })

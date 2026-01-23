@@ -9,6 +9,8 @@ async function resetPasswords() {
       '202133196': 'diego123',      // Diego Bustamante
       '123456789': 'juan123',       // Juan Pérez
       '201945872': 'maria123',      // María López
+      'ENTRADA001': 'entrada123',   // Usuario de entrada
+      'SALIDA001': 'salida123',     // Usuario de salida
     };
 
     for (const [matricula, password] of Object.entries(passwords)) {
@@ -18,7 +20,7 @@ async function resetPasswords() {
       // Actualizar en la BD
       await db.query('UPDATE usuarios SET password = ? WHERE matricula = ?', [hashedPassword, matricula]);
       
-      console.log(`✅ ${matricula}: Contraseña actualizada a "${password}"`);
+      console.log(`✅ ${matricula}: Contraseña actualizada a "${password}" (Hash: ${hashedPassword})`);
     }
 
     console.log('\n✨ Todas las contraseñas han sido actualizadas correctamente');

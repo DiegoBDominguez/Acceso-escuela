@@ -1,6 +1,7 @@
 import Card from "../components/Card"
 import { useState, useEffect } from "react"
 import axios from "axios"
+import { API_ENDPOINTS } from "../config/api"
 
 interface AlumnoData {
   id: number
@@ -35,7 +36,7 @@ const Profile = () => {
 
         // Obtener datos del perfil desde el backend
         const respuesta = await axios.get(
-          `http://localhost:3001/api/alumnos/perfil/${usuario.id}`,
+          API_ENDPOINTS.ALUMNOS_PERFIL(usuario.id),
           {
             headers: {
               Authorization: `Bearer ${token}`
