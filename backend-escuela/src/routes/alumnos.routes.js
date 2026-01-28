@@ -1,11 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const { obtenerPerfil, obtenerQRToken } = require('../controllers/alumnos.controller');
+const multer = require('multer');
+const path = require('path');
+const alumnosController = require('../controllers/alumnos.controller');
 
-// Endpoint para obtener el perfil del alumno
-router.get('/perfil/:usuarioId', obtenerPerfil);
+const storage = multer.diskStorage({
+  destination: 'uploads/',
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname)); 
+  }
+});
+const upload = multer({ storage });
 
-// Endpoint para obtener el token QR del alumno
-router.get('/qr/:usuarioId', obtenerQRToken);
+router.post('/registro', upload.single('foto'), alumnosController.registrarAlumno);
+router.get('/lista', alumnosController.obtenerAlumnos);
+router.get('/perfil/:usuarioId', alumnosController.obtenerPerfil);
+router.get('/qr/:usuarioId', alumnosController.obtenerQRToken);
+router.put('/editar/:id', alumnosController.actualizarAlumno);
+router.delete('/eliminar/:id', alumnosController.eliminarAlumno);
 
 module.exports = router;

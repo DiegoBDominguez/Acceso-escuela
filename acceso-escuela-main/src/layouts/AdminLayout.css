@@ -1,21 +1,35 @@
+/* ================= LAYOUT ================= */
 .admin-layout {
   min-height: 100vh;
   background: #eef4fb;
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* 👈 evita huecos al hacer scroll */
 }
 
 /* ================= TOPBAR ================= */
 .admin-topbar {
+  position: fixed;        /* 👈 fijo arriba */
+  top: 0;
+  left: 0;
+  right: 0;
   height: 64px;
+
   background: linear-gradient(135deg, #1e3a8a, #2563eb);
   color: white;
 
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
 
   padding: 0 30px;
+  z-index: 1000;
+}
+
+.admin-topbar h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
 }
 
 .admin-topbar button {
@@ -29,17 +43,19 @@
 
 /* ================= CONTENIDO ================= */
 .admin-main {
-  flex: 1;
+  margin-top: 64px;       /* 👈 deja espacio para topbar */
+  margin-left: 220px;     /* 👈 espacio para sidebar */
   padding: 30px;
-  margin-left: 220px; /* espacio para sidebar izquierdo */
+  flex: 1;
   transition: margin-left 0.3s ease;
 }
 
 /* ================= SIDEBAR IZQUIERDO ================= */
 .admin-sidebar {
   position: fixed;
-  top: 64px; /* MISMA ALTURA QUE TOPBAR */
+  top: 64px;               /* igual que topbar */
   left: 0;
+
   width: 220px;
   height: calc(100vh - 64px);
 
@@ -47,58 +63,60 @@
 
   display: flex;
   flex-direction: column;
-  padding: 15px;
   gap: 12px;
 
-  transition: all 0.3s ease;
+  padding: 15px;
+  transition: width 0.3s ease;
+  z-index: 999;
 }
 
-/* HEADER DEL SIDEBAR (CONTROL ESCOLAR + ☰) */
+/* ================= HEADER SIDEBAR ================= */
 .sidebar-header {
-  height: 64px;
+  height: 56px;
   background: #1e3a8a;
 
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
 
   padding: 0 15px;
-  margin: -15px -15px 15px -15px; /* ocupa todo el ancho */
+  border-radius: 10px;
 }
 
 .sidebar-header h3 {
   color: white;
-  font-size: 16px;
+  font-size: 15px;
   margin: 0;
   white-space: nowrap;
 }
 
-/* LINKS */
+/* ================= LINKS ================= */
 .admin-sidebar a {
   color: white;
   padding: 10px;
   border-radius: 8px;
   font-size: 14px;
   text-decoration: none;
+  transition: background 0.2s ease;
 }
 
 .admin-sidebar a.active {
   background: #3b82f6;
 }
 
-/* BOTÓN */
+/* ================= BOTÓN HAMBURGUESA ================= */
 .toggle {
   background: #1e40af;
   color: white;
   border: none;
-  padding: 8px;
+  padding: 10px;
   border-radius: 8px;
   cursor: pointer;
 }
 
 /* ================= SIDEBAR CERRADO ================= */
 .admin-sidebar.closed {
-  width: 70px;
+  width: 55px;
 }
 
 .admin-sidebar.closed a {
@@ -118,12 +136,12 @@
   display: none;
 }
 
-/* AJUSTE DEL CONTENIDO CUANDO SE CIERRA */
+/* ================= AJUSTE CONTENIDO ================= */
 .admin-sidebar.closed ~ .admin-main {
-  margin-left: 70px;
+  margin-left: 55px;
 }
 
-/* ================= UTILIDADES ================= */
+/* ================= TABLAS / UTILIDADES ================= */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -136,34 +154,20 @@ table {
   margin-top: 15px;
 }
 
-th,
-td {
+th, td {
   padding: 10px;
   border-bottom: 1px solid #e5e7eb;
 }
 
-.status.present {
-  color: green;
-  font-weight: bold;
-}
+.status.present { color: green; font-weight: bold; }
+.status.late { color: #ca8a04; font-weight: bold; }
+.status.absent { color: #dc2626; font-weight: bold; }
 
-.status.late {
-  color: #ca8a04;
-  font-weight: bold;
-}
-
-.status.absent {
-  color: #dc2626;
-  font-weight: bold;
-}
-/* ================= RESPONSIVE ADMIN ================= */
-
+/* ================= RESPONSIVE ================= */
 @media (max-width: 768px) {
 
   .admin-sidebar {
     transform: translateX(-100%);
-    position: fixed;
-    z-index: 1000;
   }
 
   .admin-sidebar.open {
@@ -172,70 +176,6 @@ td {
 
   .admin-main {
     margin-left: 0;
-    padding: 15px;
-  }
-
-  .admin-topbar {
-    height: 64px;
-  background: linear-gradient(135deg, #1e3a8a, #2563eb);
-  color: white;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: 0 20px;
-  }
-  /* ================= MENU HAMBURGUESA RESPONSIVE ================= */
-/* ================= BOTÓN HAMBURGUESA ================= */
-
-.toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 56px;
-  height: 56px;
-
-  background: #1e40af;
-  color: white;
-  border: none;
-  cursor: pointer;
-
-  border-radius: 12px;
-  font-size: 30px;
-
-  margin-right: 12px;
-
-  transition: background 0.2s ease, transform 0.15s ease;
-}
-.toggle:hover {
-  background: #1d4ed8;
-  transform: scale(1.05);
-}
-
-/* MOSTRAR EN MÓVIL */
-@media (max-width: 768px) {
-   .admin-topbar {
-    padding-left: 12px;
-    padding-right: 15px;
-  }
-
-  .toggle {
-    display: flex;
-    margin-right: 10px;
+    padding: 20px;
   }
 }
-}
-@media (min-width: 769px) {
-
-  .admin-topbar {
-    padding-left: 10px;
-  }
-
-  .toggle {
-    margin-left: 4px;
-  }
-}
-
-

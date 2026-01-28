@@ -1,183 +1,186 @@
 import { useNavigate } from "react-router-dom"
 import { useState } from "react"
+import { API_BASE_URL } from "../config/api" 
 import Card from "../components/Card"
 import "./NewStudent.css"
 
-interface FormData {
-  name: string
-  matricula: string
-  email: string
-  group: string
-  shift: string
-}
-
 const NewStudent = () => {
   const navigate = useNavigate()
-
-  const [form, setForm] = useState<FormData>({
-    name: "",
-    matricula: "",
-    email: "",
-    group: "",
-    shift: ""
+  const [form, setForm] = useState({
+    name: "", 
+    paternal_last_name: "", 
+    maternal_last_name: "",
+    matricula: "", 
+    email: "", 
+    grade: "", 
+    group: "", 
+    shift: "", 
+    password: "", // 🔑 Nuevo campo para la contraseña
+    photo: null as File | null
   })
 
-  const [errors, setErrors] = useState<Partial<FormData>>({})
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  const validate = () => {
-    const newErrors: Partial<FormData> = {}
-
-    if (!form.name.trim()) {
-      newErrors.name = "El nombre es obligatorio"
+  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setForm({ ...form, photo: e.target.files[0] })
     }
-
-    if (!/^[0-9]{9}$/.test(form.matricula)) {
-      newErrors.matricula = "La matrícula debe tener 9 dígitos"
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = "Correo electrónico inválido"
-    }
-
-    if (!form.group) {
-      newErrors.group = "Selecciona un grupo"
-    }
-
-    if (!form.shift) {
-      newErrors.shift = "Selecciona un turno"
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // 📦 Empaquetamos todo en FormData para enviar texto y archivo
+    const data = new FormData()
+    data.append("nombre", form.name)
+    data.append("apellido_paterno", form.paternal_last_name)
+    data.append("apellido_materno", form.maternal_last_name)
+    data.append("matricula", form.matricula)
+    data.append("correo_institucional", form.email)
+    data.append("grado", form.grade)
+    data.append("grupo", form.group)
+    data.append("turno", form.shift.toUpperCase())
+    data.append("password", form.password) // 📤 Enviamos la contraseña al backend
 
-    if (!validate()) return
+    if (form.photo) {
+      data.append("foto", form.photo) // Coincide con upload.single('foto')
+    }
 
-    alert("Alumno registrado correctamente")
-    navigate("/admin/students")
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/alumnos/registro`, {
+        method: "POST",
+        body: data,
+      })
+
+      const resultado = await response.json()
+
+      if (response.ok) {
+        alert("¡Registro exitoso! El alumno ya puede iniciar sesión.")
+        navigate("/admin/students")
+      } else {
+        alert(resultado.mensaje || "Error en el servidor. Verifica los datos.")
+      }
+    } catch (error) {
+      alert("Error de conexión: ¿Está encendido el servidor Node.js?")
+    }
   }
 
   return (
-    <>
-      {/* FLECHA ATRÁS */}
-      <div className="back-link" onClick={() => navigate("/admin/students")}>
+    <div className="new-student-container">
+      <div className="back-link" onClick={() => navigate("/admin/students")} style={{cursor: 'pointer', marginBottom: '15px'}}>
         ⬅ Volver a alumnos
       </div>
 
-      <h2>Registrar nuevo alumno</h2>
-
-      <Card className="new-student-container">
+      <Card>
         <form className="new-student-form" onSubmit={handleSubmit}>
-          {/* NOMBRE */}
-          <div>
-            <label>Nombre completo</label>
-            <input
-              type="text"
-              name="name"
-              placeholder="Ej. Juan Pérez"
-              value={form.name}
-              onChange={handleChange}
-              className={errors.name ? "error" : ""}
-            />
-            {errors.name && (
-              <span className="error-text">{errors.name}</span>
-            )}
+          <h2 style={{color: '#1e3a8a', marginBottom: '20px'}}>Registrar Nuevo Estudiante</h2>
+          
+          <div className="form-grid">
+            <div>
+              <label>Nombre(s)</label>
+              <input type="text" name="name" onChange={handleChange} required />
+            </div>
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
+              <div>
+                <label>Apellido P.</label>
+                <input type="text" name="paternal_last_name" onChange={handleChange} required />
+              </div>
+              <div>
+                <label>Apellido M.</label>
+                <input type="text" name="maternal_last_name" onChange={handleChange} required />
+              </div>
+            </div>
           </div>
 
-          {/* MATRÍCULA + CORREO */}
           <div className="form-grid">
             <div>
               <label>Matrícula</label>
-              <input
-                type="text"
-                name="matricula"
-                placeholder="9 dígitos"
-                value={form.matricula}
-                maxLength={9}
-                inputMode="numeric"
-                pattern="[0-9]*"
-                onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, "")
-                    setForm({ ...form, matricula: value })
-                }}
-                className={errors.matricula ? "error" : ""}
-              />
-              {errors.matricula && (
-                <span className="error-text">{errors.matricula}</span>
-              )}
+              <input type="text" name="matricula" maxLength={9} onChange={handleChange} required />
             </div>
-
             <div>
-              <label>Correo institucional</label>
-              <input
-                type="email"
-                name="email"
-                placeholder="alumno@escuela.edu.mx"
-                value={form.email}
-                onChange={handleChange}
-                className={errors.email ? "error" : ""}
-              />
-              {errors.email && (
-                <span className="error-text">{errors.email}</span>
-              )}
+              <label>Correo Institucional</label>
+              <input type="email" name="email" onChange={handleChange} required />
             </div>
           </div>
 
-          {/* GRUPO + TURNO */}
-          <div className="form-grid">
+          <div className="form-grid" style={{gridTemplateColumns: '1fr 1fr 1fr'}}>
+            <div>
+              <label>Grado</label>
+              <select name="grade" onChange={handleChange} required>
+                <option value="">Selecciona...</option>
+                <option value="1">1°</option>
+                <option value="2">2°</option>
+                <option value="3">3°</option>
+              </select>
+            </div>
             <div>
               <label>Grupo</label>
-              <select
-                name="group"
-                value={form.group}
-                onChange={handleChange}
-                className={errors.group ? "error" : ""}
-              >
-                <option value="">Selecciona grupo</option>
-                <option>3° A</option>
-                <option>3° B</option>
+              <select name="group" onChange={handleChange} required>
+                <option value="">Selecciona...</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
               </select>
-              {errors.group && (
-                <span className="error-text">{errors.group}</span>
-              )}
             </div>
-
             <div>
               <label>Turno</label>
-              <select
-                name="shift"
-                value={form.shift}
-                onChange={handleChange}
-                className={errors.shift ? "error" : ""}
-              >
-                <option value="">Selecciona turno</option>
-                <option>Matutino</option>
-                <option>Vespertino</option>
+              <select name="shift" onChange={handleChange} required>
+                <option value="">Selecciona...</option>
+                <option value="Matutino">Matutino</option>
+                <option value="Vespertino">Vespertino</option>
               </select>
-              {errors.shift && (
-                <span className="error-text">{errors.shift}</span>
-              )}
             </div>
           </div>
 
-          {/* BOTÓN */}
-          <div className="form-actions">
-            <button type="submit" className="btn secondary">
-              Guardar alumno
+          <div className="form-grid">
+            <div>
+              <label>Fotografía del Alumno</label>
+              <input type="file" accept="image/*" onChange={handlePhoto} style={{padding: '8px'}} />
+              {form.photo && (
+                <img 
+                  src={URL.createObjectURL(form.photo)} 
+                  alt="Preview" 
+                  style={{width: '120px', height: '150px', objectFit: 'cover', marginTop: '10px', borderRadius: '8px', border: '2px solid #dbeafe'}} 
+                />
+              )}
+            </div>
+            {/* 🔐 Sección de Contraseña */}
+            <div>
+              <label style={{fontWeight: 'bold', color: '#1e40af'}}>Contraseña de Acceso</label>
+              <input 
+                type="text" 
+                name="password" 
+                onChange={handleChange} 
+                required 
+                placeholder="Ej: Alumno2026*" 
+                style={{border: '2px solid #3b82f6'}}
+              />
+              <p style={{fontSize: '12px', color: '#64748b', marginTop: '5px'}}>
+                Esta clave permitirá al alumno entrar a su perfil.
+              </p>
+            </div>
+          </div>
+
+          <div className="form-actions" style={{marginTop: '20px'}}>
+            <button type="submit" className="btn-submit" style={{
+              backgroundColor: '#2563eb', 
+              color: 'white', 
+              border: 'none', 
+              padding: '12px 24px', 
+              borderRadius: '6px', 
+              fontSize: '16px',
+              fontWeight: 'bold',
+              width: '100%',
+              cursor: 'pointer'
+            }}>
+              Finalizar Registro
             </button>
           </div>
         </form>
       </Card>
-    </>
+    </div>
   )
 }
 

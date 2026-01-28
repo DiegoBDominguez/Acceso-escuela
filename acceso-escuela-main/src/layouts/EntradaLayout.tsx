@@ -1,180 +1,161 @@
-import { Outlet, useNavigate } from "react-router-dom"
-import { useState, useEffect, useRef } from "react"
-import { Html5QrcodeScanner } from "html5-qrcode"
-import { API_ENDPOINTS } from "../config/api"
-import "./EntradaLayout.css"
-
-interface AsistenciaResult {
-  tipo: string
-  estado: string
-  nombre: string
-  apellido: string
-  hora: string
-  fecha: string
-}
+import { Outlet, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Html5QrcodeScanner } from "html5-qrcode";
+import { API_ENDPOINTS } from "../config/api";
+import Card from "../components/Card";
+import "./EntradaLayout.css";
 
 const EntradaLayout = () => {
-  const navigate = useNavigate()
-  const [cameraActive, setCameraActive] = useState(false)
-  const [scanSuccess, setScanSuccess] = useState(false)
-  const [asistenciaInfo, setAsistenciaInfo] = useState<AsistenciaResult | null>(null)
-  const [procesando, setProcesando] = useState(false)
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate();
+  const [cameraActive, setCameraActive] = useState(false);
+  const [scanSuccess, setScanSuccess] = useState(false);
+  const [asistenciaInfo, setAsistenciaInfo] = useState<any>(null);
+  const [procesando, setProcesando] = useState(false);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
-  const startCamera = () => {
-    setCameraActive(true)
-  }
-
-  const stopCamera = () => {
-    if (scannerRef.current) {
-      scannerRef.current.clear()
-      scannerRef.current = null
-    }
-    setCameraActive(false)
-    setScanSuccess(false)
-  }
-
-  // Procesar el escaneo y registrar asistencia
-  const procesarEscaneo = async (token: string) => {
-    setProcesando(true)
+  // Usamos useCallback para evitar la advertencia amarilla en el useEffect
+  const procesarEscaneo = useCallback(async (token: string) => {
+    if (procesando) return; // Evita múltiples escaneos simultáneos
+    
+    setProcesando(true);
     try {
       const response = await fetch(API_ENDPOINTS.ASISTENCIAS_REGISTRAR, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
-      })
-
-      const data = await response.json()
+      });
+      
+      const data = await response.json();
 
       if (response.ok && data.status === 200) {
-        console.log("✅ Asistencia registrada:", data.datos)
-        setAsistenciaInfo(data.datos)
-        setScanSuccess(true)
+        setAsistenciaInfo(data.datos);
+        setScanSuccess(true);
 
-        // Resetear después de 3 segundos
+        // Resetear el estado de éxito después de 4 segundos
         setTimeout(() => {
-          setScanSuccess(false)
-          setAsistenciaInfo(null)
-        }, 3000)
+          setScanSuccess(false);
+          setAsistenciaInfo(null);
+        }, 4000);
       } else {
-        console.error("❌ Error al registrar:", data.mensaje)
-        alert(`Error: ${data.mensaje}`)
+        alert(`Error: ${data.mensaje}`);
       }
     } catch (error) {
-      console.error("❌ Error en la solicitud:", error)
-      alert("Error al registrar asistencia")
+      console.error("❌ Error en la solicitud:", error);
+      alert("Error al registrar asistencia");
     } finally {
-      setProcesando(false)
+      setProcesando(false);
     }
-  }
+  }, [procesando]);
 
-  // Inicializar el escáner cuando cameraActive cambia a true
+  const startCamera = () => setCameraActive(true);
+  
+  const stopCamera = () => {
+    if (scannerRef.current) {
+      scannerRef.current.clear();
+      scannerRef.current = null;
+    }
+    setCameraActive(false);
+    setScanSuccess(false);
+  };
+
+  // Inicializar el escáner
   useEffect(() => {
-    if (!cameraActive || scannerRef.current) return
+    if (!cameraActive) return;
 
-    // Esperar a que el DOM se actualice
+    // Pequeño delay para asegurar que el div 'qr-reader' existe en el DOM
     const timer = setTimeout(() => {
-      if (!containerRef.current) {
-        console.error("❌ Contenedor no encontrado")
-        return
-      }
-
       const scanner = new Html5QrcodeScanner(
-        "qr-reader",
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        "qr-reader", 
+        { fps: 10, qrbox: { width: 250, height: 250 } }, 
         false
-      )
+      );
 
       scanner.render(
-        (decodedText) => {
-          console.log("✅ QR escaneado:", decodedText)
-          procesarEscaneo(decodedText)
-        },
-        (error) => {
-          console.log("Error:", error)
-        }
-      )
+        (decodedText) => procesarEscaneo(decodedText),
+        (_error) => { /* Silenciar errores de lectura constantes */ }
+      );
 
-      scannerRef.current = scanner
-    }, 100)
+      scannerRef.current = scanner;
+    }, 100);
 
-    return () => clearTimeout(timer)
-  }, [cameraActive])
-
-  // Cleanup al desmontar
-  useEffect(() => {
     return () => {
+      clearTimeout(timer);
       if (scannerRef.current) {
-        scannerRef.current.clear()
+        scannerRef.current.clear();
+        scannerRef.current = null;
       }
-    }
-  }, [])
+    };
+  }, [cameraActive, procesarEscaneo]); // Dependencias completas para Vite
 
   return (
-    <div className="entrada-layout">
-
-      {/* HEADER */}
+    <div className="entrada-layout-bg">
+      {/* Topbar unificada con el diseño de Administrador */}
       <header className="entrada-topbar">
-        <h2>BIENVENIDO ENTRADA</h2>
-
-        <button className="logout" onClick={() => navigate("/")}>
-          SALIR
-        </button>
+        <div className="topbar-content">
+          <h2>BIENVENIDO PERSONAL DE ENTRADA</h2>
+          <button className="btn-cerrar-sesion" onClick={() => navigate("/")}>
+            Cerrar sesión
+          </button>
+        </div>
       </header>
 
-      {/* CONTENIDO */}
-      <main className="entrada-main">
-        <div className="entrada-container">
-          <h3>Escanea QR de Alumno</h3>
-          
-          {/* BOTONES */}
-          <div className="button-group">
-            {!cameraActive ? (
-              <button className="btn-start" onClick={startCamera}>
-                 Activar Cámara
-              </button>
-            ) : (
-              <button className="btn-stop" onClick={stopCamera} disabled={procesando}>
-                 Detener Cámara
-              </button>
-            )}
-          </div>
-
-          {/* ESCÁNER QR */}
-          {cameraActive && (
-            <div className="scanner-container" ref={containerRef}>
-              <div id="qr-reader"></div>
+      <main className="entrada-main-content">
+        <div className="centered-container">
+          <Card>
+            <div className="scanner-header">
+              <h3 className="form-main-title">Escaneo de Asistencia</h3>
+              <p className="subtitle">Coloque el código QR frente a la cámara</p>
             </div>
-          )}
 
-          {/* RESULTADO DE ASISTENCIA */}
-          {scanSuccess && asistenciaInfo && (
-            <div className="scan-result success">
-              <p>✅ {asistenciaInfo.tipo} REGISTRADA</p>
-              <div className="asistencia-detail">
-                <p><strong>{asistenciaInfo.nombre} {asistenciaInfo.apellido}</strong></p>
-                <p>Estado: <span className={asistenciaInfo.estado === 'A TIEMPO' ? 'estado-bien' : 'estado-tarde'}>{asistenciaInfo.estado}</span></p>
-                <p>Hora: <strong>{asistenciaInfo.hora}</strong></p>
-                <p>Fecha: <strong>{asistenciaInfo.fecha}</strong></p>
+            <div className="button-group">
+              {!cameraActive ? (
+                <button className="btn-primary-large" onClick={startCamera}>
+                  Activar Cámara de Entrada
+                </button>
+              ) : (
+                <button className="btn-stop-large" onClick={stopCamera}>
+                  Detener Cámara
+                </button>
+              )}
+            </div>
+
+            {cameraActive && (
+              <div className="qr-wrapper">
+                <div id="qr-reader"></div>
               </div>
-            </div>
-          )}
+            )}
 
-          {procesando && (
-            <div className="scan-info">
-              <p>⏳ Procesando escaneo...</p>
-            </div>
-          )}
+            {/* Resultado visual del escaneo */}
+            {scanSuccess && asistenciaInfo && (
+              <div className="result-card-animation">
+                <div className="success-banner">
+                  ✅ {asistenciaInfo.tipo} REGISTRADA
+                </div>
+                <div className="student-info-box">
+                  <h4 className="student-name">
+                    {asistenciaInfo.nombre} {asistenciaInfo.apellido}
+                  </h4>
+                  <div className="info-grid-simple">
+                    <p>Estado: <span className={asistenciaInfo.estado === 'A TIEMPO' ? 'tag-green' : 'tag-red'}>
+                      {asistenciaInfo.estado}
+                    </span></p>
+                    <p>Hora: <strong>{asistenciaInfo.hora}</strong></p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {procesando && (
+              <div className="loading-status">
+                <span className="spinner"></span> Verificando registro...
+              </div>
+            )}
+          </Card>
         </div>
-
         <Outlet />
       </main>
-
     </div>
-  )
-}
+  );
+};
 
-export default EntradaLayout
+export default EntradaLayout;

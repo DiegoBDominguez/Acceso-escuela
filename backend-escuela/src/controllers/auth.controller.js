@@ -1,63 +1,84 @@
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const db = require('../config/db');
 
-// Controlador para verificar credenciales de inicio de sesión
 const verificarCredenciales = async (req, res) => {
-    console.log('📥 req.body completo:', req.body);
-    
-    const { matricula, password } = req.body || {};
-    
-    console.log('✅ matricula:', matricula);
-    console.log('✅ password:', password);
-    
+    // 1. Limpieza de datos de entrada
+    const matricula = req.body.matricula ? req.body.matricula.trim() : null;
+    const password = req.body.password;
+
+    console.log('📨 Login request recibido - Matrícula:', matricula); // LOG PARA DEPURACIÓN
+
     if (!matricula || !password) {
-        return res.status(400).json({ mensaje: 'Matrícula y contraseña requeridas' });
+        console.log('❌ Campos vacíos - Matrícula:', matricula, 'Password:', password ? 'sí' : 'no');
+        return res.status(400).json({ status: 400, mensaje: 'Matrícula y contraseña requeridas' });
     }
-    
+
     try {
-        console.log('🔍 Buscando usuario con matrícula:', matricula);
-        const [usuarios] = await db.query('SELECT * FROM usuarios WHERE matricula = ?', [matricula]);
+        // 2. Consulta a la base de datos
+        // Traemos el rol tal cual está en la DB (ej. 'ENTRADA')
+        const [usuarios] = await db.query(
+            'SELECT id, matricula, password, rol, activo FROM usuarios WHERE matricula = ?', 
+            [matricula]
+        );
+        
+        console.log('🔍 Usuarios encontrados:', usuarios.length); // LOG PARA DEPURACIÓN
+        
         const usuario = usuarios[0];
-        
-        console.log('📋 Datos del usuario encontrado:', usuario);
-        
+
+        // 3. Validaciones de existencia y estado
         if (!usuario) {
-            return res.status(401).json({ mensaje: 'Credenciales incorrectas' });
+            console.log('❌ Usuario no encontrado con matrícula:', matricula);
+            return res.status(401).json({ status: 401, mensaje: 'Matrícula o contraseña incorrecta' });
         }
 
-        if (!usuario.activo) {
-            return res.status(401).json({ mensaje: 'Usuario inactivo' });
+        // Verifica si la cuenta está activa (columna 'activo' en tu DB)
+        if (!usuario.activo || usuario.activo === 0) {
+            console.log('❌ Usuario inactivo:', matricula);
+            return res.status(401).json({ status: 401, mensaje: 'Usuario inactivo. Contacte al administrador.' });
         }
 
+        // 4. Verificación de contraseña hash
         const contrasenaValida = await bcrypt.compare(password, usuario.password);
-        console.log('🔐 Comparando contraseña:');
-        console.log('   Input:', password);
-        console.log('   Hash en BD:', usuario.password);
-        console.log('   ¿Válida?:', contrasenaValida);
         
         if (!contrasenaValida) {
-            console.log('❌ Contraseña inválida');
-            return res.status(401).json({ mensaje: 'Credenciales incorrectas' });
+            console.log('❌ Contraseña incorrecta para matrícula:', matricula);
+            return res.status(401).json({ status: 401, mensaje: 'Matrícula o contraseña incorrecta' });
         }
 
-        const token = jwt.sign({ 
-            id: usuario.id, 
-            matricula: usuario.matricula, 
-            rol: usuario.rol 
-        }, 'tu_secreto', { expiresIn: '1h' });
-        console.log('✅ Login exitoso para matrícula:', usuario.matricula, 'rol:', usuario.rol);
+        // 5. Generación de Token JWT
+        // Es vital incluir el ROL exacto en el payload para las rutas protegidas del frontend
+        const token = jwt.sign(
+            { 
+                id: usuario.id, 
+                matricula: usuario.matricula, 
+                rol: usuario.rol // Enviamos 'ENTRADA', 'ADMIN' o 'ALUMNO'
+            }, 
+            process.env.JWT_SECRET || 'tu_secreto', // Usa variables de entorno preferiblemente
+            { expiresIn: '4h' }
+        );
+
+        // 6. Respuesta exitosa
+        console.log('✅ Login exitoso para matrícula:', matricula, 'Rol:', usuario.rol);
+        // Enviamos el objeto usuario completo para que el Frontend sepa a dónde redirigir
         res.status(200).json({ 
             status: 200,
-            id: usuario.id,
-            matricula: usuario.matricula,
-            rol: usuario.rol,
+            mensaje: 'Login exitoso',
             token,
-            mensaje: 'Bienvenido' 
+            usuario: { 
+                id: usuario.id, 
+                matricula: usuario.matricula, 
+                rol: usuario.rol // Importante para la vista de entrada
+            }
         });
+
     } catch (error) {
-        console.error('❌ Error completo:', error);
-        res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+        console.error("❌ Error en Login:", error);
+        res.status(500).json({ 
+            status: 500, 
+            mensaje: 'Error interno del servidor', 
+            error: error.message 
+        });
     }
 };
 

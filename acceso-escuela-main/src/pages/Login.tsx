@@ -1,95 +1,81 @@
-import axios from "axios"
-import { useState } from "react"
-import { API_ENDPOINTS } from "../config/api"
-import "./Login.css"
+import axios from "axios";
+import { useState } from "react";
+import { API_ENDPOINTS } from "../config/api";
+import "./Login.css";
 
 const Login = () => {
-  const [matricula, setMatricula] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [showHelp, setShowHelp] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [matricula, setMatricula] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [showHelp, setShowHelp] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log('🚀 Botón presionado')
+    e.preventDefault();
+    setError(""); // Limpiar errores previos
 
     if (!matricula || !password) {
-      setError("Por favor completa todos los campos")
-      return
+      setError("Por favor completa todos los campos");
+      return;
     }
 
-    setLoading(true)
-    console.log('📤 Enviando solicitud con:', { matricula, password })
+    setLoading(true);
 
     try {
+      // 1. Enviar solicitud al backend
       const respuesta = await axios.post(API_ENDPOINTS.AUTH_LOGIN, { 
         matricula: matricula.trim(), 
         password: password.trim() 
-      })
+      });
 
-      console.log('✅ Respuesta del servidor:', respuesta.status, respuesta.data)
-
+      // 2. Verificar respuesta exitosa
       if (respuesta.status === 200 && respuesta.data.token) {
-        localStorage.setItem('token', respuesta.data.token)
-        localStorage.setItem('usuario', JSON.stringify(respuesta.data))
-        setError("")
+        const { token, usuario } = respuesta.data;
+
+        // 3. Guardar datos en localStorage
+        localStorage.setItem('token', token);
+        localStorage.setItem('usuario', JSON.stringify(usuario)); // Guardamos el objeto usuario
         
-        // Redirigir según el rol
-        const rol = respuesta.data.rol
-        console.log('🔐 Rol del usuario:', rol)
-        console.log('📦 Datos completos:', respuesta.data)
+        const rol = usuario.rol; // Acceso correcto al rol
         
+        // 4. Redirección basada en el rol
         setTimeout(() => {
           if (rol === 'ALUMNO') {
-            console.log('➡️ Redirigiendo a /students')
-            window.location.href = '/students'
+            window.location.href = '/students';
           } else if (rol === 'ADMIN') {
-            console.log('➡️ Redirigiendo a /admin')
-            window.location.href = '/admin'
-          } else if (rol === 'ENTRADA') {
-            console.log('➡️ Redirigiendo a /entrada')
-            window.location.href = '/entrada'
+            window.location.href = '/admin';
+          } else if (rol === 'ENTRADA') { // <--- Simplificado a ENTRADA que es lo que manda tu DB
+            window.location.href = '/entrada';
           } else {
-            console.error('❌ Rol desconocido:', rol)
-          }
-        }, 1000)
+           setError("Rol de usuario no reconocido: " + rol);
+       }
+      }, 500);
       }
     } catch (error: any) {
-      console.error('❌ Error:', error)
-      console.log('Response:', error.response?.data)
-      setError("Matrícula o contraseña incorrecta")
-      setMatricula("")
-      setPassword("")
+      console.error('❌ Error de Login:', error.response?.data || error.message);
+      // Mostrar mensaje específico del servidor si existe
+      setError(error.response?.data?.mensaje || "Error al conectar con el servidor");
+      setPassword(""); 
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="login-container">
-
-      {/* SECCIÓN INFORMATIVA */}
       <div className="login-info">
         <h1>Sistema de Control de Asistencia</h1>
         <h2>mediante Código QR</h2>
-
-        <p>
-          Plataforma web para el registro automático de entradas y salidas
-          de alumnos de nivel bachillerato.
-        </p>
-
+        <p>Plataforma web para el registro automático de entradas y salidas de alumnos de nivel bachillerato.</p>
         <ul>
           <li>✔ Registro seguro de asistencia</li>
         </ul>
-
         <span className="institution">
           Facultad de Ciencias de la Computación <br />
           Benemérita Universidad Autónoma de Puebla
         </span>
       </div>
 
-      {/* FORMULARIO */}
       <div className="login-form">
         <form onSubmit={handleLogin}>
           <h3>Inicio de Sesión</h3>
@@ -115,16 +101,15 @@ const Login = () => {
             disabled={loading}
           />
 
-          {error && <span className="error-text">{error}</span>}
+          {error && <span className="error-text" style={{color: 'red', display: 'block', marginBottom: '10px'}}>{error}</span>}
 
           <button type="submit" disabled={loading}>
-            {loading ? "Conectando..." : "Acceder"}
+            {loading ? "Verificando..." : "Acceder"}
           </button>
 
-          {/* ENLACE DE AYUDA */}
           <span
             className="login-footer"
-            style={{ cursor: "pointer", marginTop: "10px" }}
+            style={{ cursor: "pointer", marginTop: "20px", display: "block", textAlign: "center" }}
             onClick={() => setShowHelp(true)}
           >
             ¿No puedes acceder a tu cuenta?
@@ -132,35 +117,26 @@ const Login = () => {
         </form>
       </div>
 
-      {/* MODAL */}
       {showHelp && (
         <div className="modal-overlay">
           <div className="modal">
             <h3>Información Importante</h3>
-
-            <p>Para iniciar sesión al Sistema de Control de Asistencia realiza los siguientes pasos:</p>
-
+            <p>Para iniciar sesión realiza los siguientes pasos:</p>
             <ol>
               <li>Ingresa tu matrícula</li>
-              <li>Coloca tu contraseña</li>
+              <li>Coloca tu contraseña (por defecto es tu matrícula si es la primera vez)</li>
               <li>Da clic en el botón Acceder</li>
             </ol>
-
             <p className="modal-warning">
               <strong>¡Importante!</strong><br />
-              Si no recuerdas la contraseña de acceso de tu cuenta 
-              por favor contacta a la Secretaría Académica
-              para solicitar el reinicio.
+              Si no recuerdas tu contraseña, contacta a la Secretaría Académica para solicitar un reinicio.
             </p>
-
-            <button onClick={() => setShowHelp(false)}>
-              Cerrar
-            </button>
+            <button onClick={() => setShowHelp(false)}>Cerrar</button>
           </div>
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;

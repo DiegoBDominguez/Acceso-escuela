@@ -1,4 +1,4 @@
-# Logs
+# ================= LOGS =================
 logs
 *.log
 npm-debug.log*
@@ -7,12 +7,19 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# ================= FRONTEND =================
+node_modules/
+dist/
+dist-ssr/
 *.local
+.env
 
-# Editor directories and files
+# ================= BACKEND =================
+backend-escuela/node_modules/
+backend-escuela/uploads/
+backend-escuela/.env
+
+# ================= EDITORES / SO =================
 .vscode/*
 !.vscode/extensions.json
 .idea

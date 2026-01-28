@@ -1,9 +1,10 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 
 const app = express();
 
-// Configuración de CORS para permitir solicitudes desde cualquier origen
+// Configuración de CORS
 app.use(cors({
   origin: '*',
   credentials: true,
@@ -11,23 +12,30 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// =======================================================
+// CAMBIO IMPORTANTE: Aumentar límite para recibir fotos Base64
+// =======================================================
+app.use(express.json({ limit: '10mb' })); 
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Servir archivos estáticos
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.get("/", (req, res) => {
   res.send("API Preparatoria funcionando 🚀");
 });
 
-// Rutas de autenticación
+// Rutas
 const authRoutes = require("./routes/auth.routes");
 app.use("/api/auth", authRoutes);
 
-// Rutas de alumnos
 const alumnosRoutes = require("./routes/alumnos.routes");
 app.use("/api/alumnos", alumnosRoutes);
 
-// Rutas de asistencias
 const asistenciasRoutes = require("./routes/asistencias.routes");
 app.use("/api/asistencias", asistenciasRoutes);
+
+const personalRoutes = require("./routes/personal.routes");
+app.use("/api/personal", personalRoutes);  
 
 module.exports = app;
