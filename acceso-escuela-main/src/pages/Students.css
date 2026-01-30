@@ -1,0 +1,71 @@
+.students-container {
+  padding: 20px;
+}
+
+.students-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.students-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.students-table th {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  padding: 15px;
+  text-align: left;
+  color: white;
+  font-weight: 600;
+}
+
+.students-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #334155;
+}
+
+.students-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.students-table tbody tr:hover {
+  background: #f0f9ff;
+}
+
+.students-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* BADGES */
+.attendance-badge, .status-badge {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: bold;
+  display: inline-block;
+}
+
+/* ACCIONES */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.action-buttons button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.action-buttons button:hover {
+  background: #f1f5f9;
+}

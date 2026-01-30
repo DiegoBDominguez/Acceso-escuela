@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { API_BASE_URL } from "../config/api";
 import Card from "../components/Card";
 import axios from "axios";
+import "./Students.css";
 
 interface Alumno {
   id: number;
@@ -15,6 +16,7 @@ interface Alumno {
   turno: string;
   activo: number;
   foto_url?: string;
+  porcentaje_asistencia?: number;
 }
 
 const Students = () => {
@@ -125,56 +127,73 @@ const Students = () => {
         </div>
 
         <div className="table-wrapper" style={{ overflowX: "auto" }}>
-          <table width="100%" style={{ borderCollapse: "collapse", minWidth: "800px" }}>
+          <table className="students-table">
             <thead>
-              <tr style={{ textAlign: "left", backgroundColor: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
-                <th style={{ padding: "16px" }}>Matrícula</th>
-                <th style={{ padding: "16px" }}>Nombre Completo</th>
-                <th style={{ padding: "16px" }}>Grado/Grupo</th>
-                <th style={{ padding: "16px" }}>Turno</th>
-                <th style={{ padding: "16px" }}>Estado</th>
-                <th style={{ padding: "16px", textAlign: "center" }}>Acciones</th>
+              <tr>
+                <th>Matrícula</th>
+                <th>Nombre Completo</th>
+                <th>Grado</th>
+                <th>Grupo</th>
+                <th>Turno</th>
+                <th>Asistencia</th>
+                <th>Estado</th>
+                <th style={{ textAlign: "center" }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>Cargando lista de alumnos...</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>Cargando lista de alumnos...</td></tr>
               ) : filteredStudents.length > 0 ? (
                 filteredStudents.map((alumno) => (
-                  <tr key={alumno.id} className="table-row" style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    <td style={{ padding: "16px", fontWeight: "600", color: "#2563eb" }}>
+                  <tr key={alumno.id}>
+                    <td style={{ fontWeight: "600", color: "#2563eb" }}>
                       {alumno.matricula || <span style={{color: '#94a3b8', fontSize: '12px', fontWeight: "normal"}}>Sin Matrícula</span>}
                     </td>
-                    <td style={{ padding: "16px", color: "#334155" }}>
+                    <td>
                       {`${alumno.nombre} ${alumno.apellido_paterno} ${alumno.apellido_materno}`}
                     </td>
-                    <td style={{ padding: "16px" }}>{`${alumno.grado}° "${alumno.grupo}"`}</td>
-                    <td style={{ padding: "16px" }}>{alumno.turno}</td>
-                    <td style={{ padding: "16px" }}>
-                      <span style={{ 
-                        padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "600",
+                    <td>{alumno.grado}°</td>
+                    <td>{alumno.grupo}</td>
+                    <td>{alumno.turno}</td>
+                    <td>
+                      {(() => {
+                        const rawValue = alumno.porcentaje_asistencia;
+                        const percentage = typeof rawValue === 'number' ? rawValue : 
+                                         typeof rawValue === 'string' ? parseFloat(rawValue) || 0 : 0;
+                        return (
+                          <span className="attendance-badge" style={{
+                            backgroundColor: percentage >= 80 ? "#dcfce7" : percentage >= 60 ? "#fef3c7" : "#fee2e2",
+                            color: percentage >= 80 ? "#166534" : percentage >= 60 ? "#92400e" : "#991b1b"
+                          }}>
+                            {rawValue !== undefined && rawValue !== null ? `${percentage.toFixed(1)}%` : "N/A"}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    <td>
+                      <span className="status-badge" style={{
                         backgroundColor: alumno.activo ? "#dcfce7" : "#fee2e2",
                         color: alumno.activo ? "#166534" : "#991b1b"
                       }}>
                         {alumno.activo ? "Activo" : "Inactivo"}
                       </span>
                     </td>
-                    <td style={{ padding: "16px", textAlign: "center" }}>
-                      <button 
-                        onClick={() => editarAlumno(alumno)}
-                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: "18px", marginRight: "12px" }}
-                        title="Editar Datos"
-                      >✏️</button>
-                      <button 
-                        onClick={() => eliminarAlumno(alumno.id, alumno.nombre)}
-                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: "18px" }}
-                        title="Eliminar permanentemente"
-                      >🗑️</button>
+                    <td>
+                      <div className="action-buttons">
+                        <button 
+                          onClick={() => editarAlumno(alumno)}
+                          title="Editar Datos"
+                        >✏️</button>
+                        <button 
+                          onClick={() => eliminarAlumno(alumno.id, alumno.nombre)}
+                          title="Eliminar permanentemente"
+                        >🗑️</button>
+                      </div>
                     </td>
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={6} style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>No se encontraron alumnos con ese nombre.</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>No se encontraron alumnos con ese nombre.</td></tr>
               )}
             </tbody>
           </table>

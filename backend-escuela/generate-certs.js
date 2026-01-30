@@ -51,7 +51,7 @@ try {
     altNames: [
       { type: 2, value: 'localhost' },
       { type: 2, value: '127.0.0.1' },
-      { type: 2, value: '192.168.101.112' }
+      { type: 2, value: '192.168.101.110' }
     ]
   }]);
   

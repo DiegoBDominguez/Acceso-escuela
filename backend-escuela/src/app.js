@@ -38,4 +38,13 @@ app.use("/api/asistencias", asistenciasRoutes);
 const personalRoutes = require("./routes/personal.routes");
 app.use("/api/personal", personalRoutes);  
 
+const settingsRoutes = require("./routes/settings.routes");
+app.use("/api/settings", settingsRoutes);
+
+const nonWorkingDaysRoutes = require("./routes/non-working-days.routes");
+app.use("/api/non-working-days", nonWorkingDaysRoutes);
+
+const reportsRoutes = require("./routes/reports.routes");
+app.use("/api/reports", reportsRoutes);
+
 module.exports = app;
