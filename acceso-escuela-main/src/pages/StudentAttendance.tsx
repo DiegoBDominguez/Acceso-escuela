@@ -14,12 +14,13 @@ interface DiaSemana {
   dia: string
   entrada: string | null
   salida: string | null
-  presente: boolean
+  estado: string | null
 }
 
 interface EstadisticasSemana {
   total_asistencias: number
   total_faltas: number
+  total_tardes: number
   porcentaje_asistencia: number
 }
 
@@ -30,6 +31,7 @@ interface DatosSemana {
   }
   dias: DiaSemana[]
   estadisticas: EstadisticasSemana
+  inicio_semestre: string
 }
 
 const StudentAttendance = () => {
@@ -190,46 +192,96 @@ const StudentAttendance = () => {
           <>
             {/* Días de la semana */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "10px", marginBottom: "20px" }}>
-              {datosSemana.dias.map((dia, index) => (
-                <div
-                  key={index}
-                  style={{
-                    padding: "15px",
-                    backgroundColor: dia.presente ? "#dcfce7" : "#fef2f2",
-                    border: `2px solid ${dia.presente ? "#16a34a" : "#dc2626"}`,
-                    borderRadius: "8px",
-                    textAlign: "center"
-                  }}
-                >
-                  <div style={{ fontWeight: "bold", marginBottom: "8px", color: "#374151" }}>
-                    {dia.dia.charAt(0).toUpperCase() + dia.dia.slice(1)}
-                  </div>
-                  <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "8px" }}>
-                    {new Date(dia.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}
-                  </div>
-                  {dia.presente ? (
-                    <>
-                      <div style={{ fontSize: "14px", fontWeight: "bold", color: "#16a34a", marginBottom: "4px" }}>
-                        ✅ Presente
-                      </div>
-                      <div style={{ fontSize: "12px", color: "#374151" }}>
-                        <div>Entrada: {dia.entrada ? dia.entrada.substring(0, 5) : '-'}</div>
-                        <div>Salida: {dia.salida ? dia.salida.substring(0, 5) : '-'}</div>
-                      </div>
-                    </>
-                  ) : (
-                    <div style={{ fontSize: "14px", fontWeight: "bold", color: "#dc2626" }}>
-                      ❌ Ausente
+              {datosSemana.dias.map((dia, index) => {
+                const hoy = new Date();
+                hoy.setHours(0, 0, 0, 0);
+                const fechaDia = new Date(dia.fecha + 'T12:00:00'); // Usar mediodía para evitar problemas de zona horaria
+                const isFuture = fechaDia > hoy;
+                const inicioSemestre = new Date(datosSemana.inicio_semestre + 'T12:00:00');
+                const isBeforeStart = fechaDia < inicioSemestre;
+
+                // Determinar color y estado basado en la entrada y hora
+                let backgroundColor = "#fef2f2"; // Rojo por defecto (ausente)
+                let borderColor = "#dc2626";
+                let statusText = "❌ Ausente";
+                let statusColor = "#dc2626";
+
+                if (dia.entrada) {
+                  // Si hay entrada, determinar si es presente o retardo basado en hora
+                  const horaLimite = '07:00:00';
+                  const esPresente = dia.entrada <= horaLimite;
+                  if (esPresente) {
+                    backgroundColor = "#dcfce7"; // Verde
+                    borderColor = "#16a34a";
+                    statusText = "✅ Presente";
+                    statusColor = "#16a34a";
+                  } else {
+                    backgroundColor = "#fef3c7"; // Amarillo
+                    borderColor = "#f59e0b";
+                    statusText = "⏰ Retardo";
+                    statusColor = "#f59e0b";
+                  }
+                } else if (isBeforeStart) {
+                  backgroundColor = "#f3f4f6";
+                  borderColor = "#9ca3af";
+                  statusText = "🚫 No disponible";
+                  statusColor = "#6b7280";
+                } else if (isFuture) {
+                  backgroundColor = "#f3f4f6";
+                  borderColor = "#9ca3af";
+                  statusText = "⏳ Pendiente";
+                  statusColor = "#6b7280";
+                }
+
+                return (
+                  <div
+                    key={index}
+                    style={{
+                      padding: "15px",
+                      backgroundColor: backgroundColor,
+                      border: `2px solid ${borderColor}`,
+                      borderRadius: "8px",
+                      textAlign: "center",
+                      opacity: isFuture || isBeforeStart ? 0.7 : 1
+                    }}
+                  >
+                    <div style={{ fontWeight: "bold", marginBottom: "8px", color: "#374151" }}>
+                      {dia.dia.charAt(0).toUpperCase() + dia.dia.slice(1)}
                     </div>
-                  )}
-                </div>
-              ))}
+                    <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "8px" }}>
+                      {dia.fecha.split('-').reverse().join('/').substring(0,5)}
+                    </div>
+                    {dia.estado ? (
+                      <>
+                        <div style={{ fontSize: "14px", fontWeight: "bold", color: statusColor, marginBottom: "4px" }}>
+                          {statusText}
+                        </div>
+                        <div style={{ fontSize: "12px", color: "#374151" }}>
+                          <div>Entrada: {dia.entrada ? dia.entrada.substring(0, 5) : '-'}</div>
+                          <div>Salida: {dia.salida ? dia.salida.substring(0, 5) : '-'}</div>
+                        </div>
+                      </>
+                    ) : isBeforeStart ? (
+                      <div style={{ fontSize: "14px", fontWeight: "bold", color: "#6b7280" }}>
+                        🚫 No disponible
+                      </div>
+                    ) : isFuture ? (
+                      <div style={{ fontSize: "14px", fontWeight: "bold", color: "#6b7280" }}>
+                        ⏳ Pendiente
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: "14px", fontWeight: "bold", color: "#dc2626" }}>
+                        ❌ Ausente
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Estadísticas */}
-            <div style={{
+            <div className="attendance-stats" style={{
               display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
+              gridTemplateColumns: "repeat(4, 1fr)",
               gap: "15px",
               padding: "20px",
               backgroundColor: "white",
@@ -241,6 +293,12 @@ const StudentAttendance = () => {
                   {datosSemana.estadisticas.total_asistencias}
                 </div>
                 <div style={{ fontSize: "14px", color: "#6b7280" }}>Asistencias</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: "24px", fontWeight: "bold", color: "#eab308" }}>
+                  {datosSemana.estadisticas.total_tardes}
+                </div>
+                <div style={{ fontSize: "14px", color: "#6b7280" }}>Retardos</div>
               </div>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: "24px", fontWeight: "bold", color: "#dc2626" }}>

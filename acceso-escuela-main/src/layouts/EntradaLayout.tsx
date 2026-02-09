@@ -11,11 +11,17 @@ const EntradaLayout = () => {
   const [scanSuccess, setScanSuccess] = useState(false);
   const [asistenciaInfo, setAsistenciaInfo] = useState<any>(null);
   const [procesando, setProcesando] = useState(false);
+  const [isCooldown, setIsCooldown] = useState(false);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const lastScanRef = useRef<number>(0);
 
   // Usamos useCallback para evitar la advertencia amarilla en el useEffect
   const procesarEscaneo = useCallback(async (token: string) => {
-    if (procesando) return; // Evita múltiples escaneos simultáneos
+    const now = Date.now();
+    if (now - lastScanRef.current < 3000) return; // Ignorar escaneos muy cercanos (3 segundos)
+    lastScanRef.current = now;
+
+    if (procesando || isCooldown) return; // Evita múltiples escaneos simultáneos y cooldown
     
     setProcesando(true);
     try {
@@ -30,12 +36,22 @@ const EntradaLayout = () => {
       if (response.ok && data.status === 200) {
         setAsistenciaInfo(data.datos);
         setScanSuccess(true);
+        // Detener la cámara si es salida, mantener para entrada
+        if (data.datos.tipo === 'SALIDA') {
+          setCameraActive(false);
+        }
+        setIsCooldown(true); // Activar cooldown
 
-        // Resetear el estado de éxito después de 4 segundos
+        // Resetear el estado de éxito después de 8 segundos
         setTimeout(() => {
           setScanSuccess(false);
           setAsistenciaInfo(null);
-        }, 4000);
+        }, 8000);
+
+        // Desactivar cooldown después de 10 segundos
+        setTimeout(() => {
+          setIsCooldown(false);
+        }, 10000);
       } else {
         alert(`Error: ${data.mensaje}`);
       }
@@ -56,6 +72,11 @@ const EntradaLayout = () => {
     }
     setCameraActive(false);
     setScanSuccess(false);
+    // Limpiar el contenido del div del lector
+    const qrReaderElement = document.getElementById('qr-reader');
+    if (qrReaderElement) {
+      qrReaderElement.innerHTML = '';
+    }
   };
 
   // Inicializar el escáner
@@ -64,19 +85,29 @@ const EntradaLayout = () => {
 
     // Pequeño delay para asegurar que el div 'qr-reader' existe en el DOM
     const timer = setTimeout(() => {
+      const qrReaderElement = document.getElementById('qr-reader');
+      if (!qrReaderElement) {
+        console.error('Elemento qr-reader no encontrado');
+        return;
+      }
+
       const scanner = new Html5QrcodeScanner(
         "qr-reader", 
-        { fps: 10, qrbox: { width: 250, height: 250 } }, 
+        { fps: 2, qrbox: { width: 250, height: 250 } }, 
         false
       );
 
-      scanner.render(
-        (decodedText) => procesarEscaneo(decodedText),
-        (_error) => { /* Silenciar errores de lectura constantes */ }
-      );
+      try {
+        scanner.render(
+          (decodedText) => procesarEscaneo(decodedText),
+          (_error) => { /* Silenciar errores de lectura constantes */ }
+        );
+      } catch (error) {
+        console.error('Error initializing QR scanner:', error);
+      }
 
       scannerRef.current = scanner;
-    }, 100);
+    }, 500);
 
     return () => {
       clearTimeout(timer);
@@ -85,7 +116,7 @@ const EntradaLayout = () => {
         scannerRef.current = null;
       }
     };
-  }, [cameraActive, procesarEscaneo]); // Dependencias completas para Vite
+  }, [cameraActive]); // Solo depende de cameraActive
 
   return (
     <div className="entrada-layout-bg">
@@ -148,6 +179,12 @@ const EntradaLayout = () => {
             {procesando && (
               <div className="loading-status">
                 <span className="spinner"></span> Verificando registro...
+              </div>
+            )}
+
+            {isCooldown && !procesando && (
+              <div className="cooldown-status">
+                <span>⏳ Espera 5 segundos antes del próximo escaneo...</span>
               </div>
             )}
           </Card>

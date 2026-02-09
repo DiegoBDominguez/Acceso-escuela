@@ -80,3 +80,21 @@
 .pending {
   color: #9ca3af;
 }
+
+/* RESPONSIVE PARA ASISTENCIAS SEMANALES */
+@media (max-width: 768px) {
+  .attendance-week-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important; /* 1 columna en móvil */
+    gap: 10px !important;
+  }
+
+  .attendance-week-grid > div {
+    min-height: 120px;
+    padding: 12px !important;
+  }
+
+  .attendance-stats {
+    grid-template-columns: repeat(2, 1fr) !important; /* 2 columnas para stats en móvil */
+  }
+}

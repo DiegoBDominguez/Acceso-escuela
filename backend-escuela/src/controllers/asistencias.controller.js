@@ -25,14 +25,16 @@ const registrarAsistencia = async (req, res) => {
         }
         
         const alumnoId = qrTokens[0].alumno_id;
-        const hoy = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const hoy = new Date().getFullYear() + '-' + 
+          String(new Date().getMonth() + 1).padStart(2, '0') + '-' + 
+          String(new Date().getDate()).padStart(2, '0'); // Fecha local
         const ahora = new Date().toTimeString().split(' ')[0]; // HH:MM:SS
         
         console.log('📅 Fecha:', hoy, '⏰ Hora:', ahora);
         
         // Obtener datos del alumno
         const [alumnos] = await db.query(
-            `SELECT a.id, a.nombre, a.apellido_paterno, a.turno
+            `SELECT a.id, a.usuario_id, a.nombre, a.apellido_paterno, a.turno
              FROM alumnos a WHERE a.id = ?`,
             [alumnoId]
         );
@@ -55,24 +57,24 @@ const registrarAsistencia = async (req, res) => {
         
         if (registrosHoy.length === 0) {
             // Primera entrada del día
-            const estado = ahora <= horaLimite ? 'A TIEMPO' : 'RETARDO';
+            const estado = ahora <= horaLimite ? 'presente' : 'retardo';
             
             await db.query(
-                `INSERT INTO asistencias (alumno_id, fecha, hora_entrada) 
-                 VALUES (?, ?, ?)`,
-                [alumnoId, hoy, ahora]
+                `INSERT INTO asistencias (alumno_id, usuario_id, fecha, hora_entrada, estado) 
+                 VALUES (?, ?, ?, ?, ?)`,
+                [alumnoId, alumno.usuario_id, hoy, ahora, estado]
             );
             
             resultado = {
                 tipo: 'ENTRADA',
-                estado: estado,
+                estado: estado === 'presente' ? 'A TIEMPO' : 'RETARDO',
                 nombre: alumno.nombre,
                 apellido: alumno.apellido_paterno,
                 hora: ahora,
                 fecha: hoy
             };
             
-            console.log(`✅ Entrada registrada - ${estado} para ${alumno.nombre}`);
+            console.log(`✅ Entrada registrada - ${estado === 'presente' ? 'A TIEMPO' : 'RETARDO'} para ${alumno.nombre}`);
         } else {
             // Actualizar salida
             const registro = registrosHoy[0];
@@ -274,20 +276,52 @@ const obtenerAsistenciasSemanales = async (req, res) => {
         const usuarioId = req.params.usuarioId;
         const { fecha } = req.query; // Fecha opcional para seleccionar semana
 
+        console.log('🔍 Usuario ID:', usuarioId, 'Fecha:', fecha);
+
+        // Obtener la fecha de inicio del semestre desde configuraciones
+        const [config] = await db.query('SELECT inicio_semestre FROM configuraciones LIMIT 1');
+        if (config.length === 0 || !config[0].inicio_semestre) {
+            return res.status(400).json({ mensaje: 'Fecha de inicio del semestre no configurada' });
+        }
+        const inicioSemestre = new Date(config[0].inicio_semestre);
+        if (isNaN(inicioSemestre.getTime())) {
+            return res.status(400).json({ mensaje: 'Fecha de inicio del semestre inválida' });
+        }
+        const inicioSemestreStr = inicioSemestre.getFullYear() + '-' + 
+          String(inicioSemestre.getMonth() + 1).padStart(2, '0') + '-' + 
+          String(inicioSemestre.getDate()).padStart(2, '0');
+        console.log('📅 Inicio semestre:', inicioSemestre, 'Str:', inicioSemestreStr);
+
         // Si no se proporciona fecha, usar la fecha actual
         const fechaBase = fecha ? new Date(fecha) : new Date();
+        console.log('📅 Fecha base:', fechaBase);
 
-        // Calcular el inicio de la semana (lunes)
-        const inicioSemana = new Date(fechaBase);
-        const diaSemana = inicioSemana.getDay(); // 0 = domingo, 1 = lunes, etc.
-        const diff = inicioSemana.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1); // Ajustar para que lunes sea el inicio
-        inicioSemana.setDate(diff);
+        // Calcular días transcurridos desde el inicio del semestre
+        const diasTranscurridos = Math.floor((fechaBase - inicioSemestre) / (1000 * 60 * 60 * 24));
+        console.log('📊 Días transcurridos:', diasTranscurridos);
+
+        // Calcular el número de semana (cada 5 días)
+        const semanaActual = Math.floor(diasTranscurridos / 5);
+        console.log('📊 Semana actual:', semanaActual);
+
+        // Calcular inicio de la semana actual (basado en inicio_semestre)
+        const inicioSemana = new Date(inicioSemestre);
+        inicioSemana.setDate(inicioSemestre.getDate() + (semanaActual * 5));
         inicioSemana.setHours(0, 0, 0, 0);
 
-        // Calcular el fin de la semana (viernes)
+        // Calcular fin de la semana (5 días después)
         const finSemana = new Date(inicioSemana);
-        finSemana.setDate(inicioSemana.getDate() + 4); // Viernes
+        finSemana.setDate(inicioSemana.getDate() + 4);
         finSemana.setHours(23, 59, 59, 999);
+
+        const inicioStr = inicioSemana.getFullYear() + '-' + 
+          String(inicioSemana.getMonth() + 1).padStart(2, '0') + '-' + 
+          String(inicioSemana.getDate()).padStart(2, '0');
+        const finStr = finSemana.getFullYear() + '-' + 
+          String(finSemana.getMonth() + 1).padStart(2, '0') + '-' + 
+          String(finSemana.getDate()).padStart(2, '0');
+
+        console.log('📅 Semana:', inicioStr, 'a', finStr);
 
         const [alumnos] = await db.query(
             'SELECT id FROM alumnos WHERE usuario_id = ?',
@@ -299,53 +333,84 @@ const obtenerAsistenciasSemanales = async (req, res) => {
         }
 
         const alumnoId = alumnos[0].id;
+        console.log('👤 Alumno ID:', alumnoId);
 
         // Obtener asistencias de la semana
         const [asistencias] = await db.query(
-            `SELECT fecha, hora_entrada, hora_salida FROM asistencias
+            `SELECT fecha, hora_entrada, hora_salida, estado FROM asistencias
              WHERE alumno_id = ? AND fecha BETWEEN ? AND ?
              ORDER BY fecha`,
-            [alumnoId, inicioSemana.toISOString().split('T')[0], finSemana.toISOString().split('T')[0]]
+            [alumnoId, inicioStr, finStr]
         );
 
-        // Crear array de días de la semana (lunes a viernes)
+        console.log('📋 Asistencias encontradas:', asistencias.length);
+
+            // Crear array de días de la semana (lunes a viernes)
         const diasSemana = [];
+        let diasHabilesSemana = 0; // Días que ya pasaron y están dentro del semestre
         for (let i = 0; i < 5; i++) {
             const fechaDia = new Date(inicioSemana);
             fechaDia.setDate(inicioSemana.getDate() + i);
-            const fechaStr = fechaDia.toISOString().split('T')[0];
+            const fechaStr = fechaDia.getFullYear() + '-' + 
+              String(fechaDia.getMonth() + 1).padStart(2, '0') + '-' + 
+              String(fechaDia.getDate()).padStart(2, '0');
 
             // Buscar asistencia para este día
             const asistenciaDia = asistencias.find(a => a.fecha === fechaStr);
+
+            // Verificar si el día ya pasó y está dentro del semestre
+            const hoy = new Date();
+            hoy.setHours(23, 59, 59, 999); // Fin del día actual
+            const isDiaPasado = fechaDia <= hoy;
+            const isDiaDentroSemestre = fechaDia >= inicioSemestre;
+
+            if (isDiaPasado && isDiaDentroSemestre) {
+                diasHabilesSemana++;
+            }
 
             diasSemana.push({
                 fecha: fechaStr,
                 dia: fechaDia.toLocaleDateString('es-ES', { weekday: 'long' }),
                 entrada: asistenciaDia ? asistenciaDia.hora_entrada : null,
                 salida: asistenciaDia ? asistenciaDia.hora_salida : null,
-                presente: asistenciaDia ? true : false
+                estado: asistenciaDia ? asistenciaDia.estado : null
             });
         }
 
-        // Calcular estadísticas
-        const totalDias = 5; // Lunes a viernes
-        const diasPresentes = asistencias.length;
-        const diasAusentes = totalDias - diasPresentes;
-        const porcentajeAsistencia = totalDias > 0 ? Math.round((diasPresentes / totalDias) * 100) : 0;
+        // Calcular estadísticas semanales
+        const diasPresentesSemana = asistencias.filter(a => a.estado === 'presente').length;
+        const diasTardesSemana = asistencias.filter(a => a.estado === 'retardo').length;
+        const diasConAsistencia = asistencias.length;
+        const diasAusentesSemana = diasHabilesSemana - diasConAsistencia;
+
+        // Calcular estadísticas generales desde inicio de semestre
+        const hoy = new Date();
+        const hoyStr = hoy.getFullYear() + '-' + 
+          String(hoy.getMonth() + 1).padStart(2, '0') + '-' + 
+          String(hoy.getDate()).padStart(2, '0');
+        const [asistenciasTotales] = await db.query(
+            `SELECT COUNT(DISTINCT fecha) as total_asistencias FROM asistencias
+             WHERE alumno_id = ? AND fecha BETWEEN ? AND ?`,
+            [alumnoId, inicioSemestreStr, hoyStr]
+        );
+        const totalDiasDesdeInicio = Math.floor((hoy - inicioSemestre) / (1000 * 60 * 60 * 24)) + 1;
+        const porcentajeAsistenciaGeneral = totalDiasDesdeInicio > 0 ? Math.round((asistenciasTotales[0].total_asistencias / totalDiasDesdeInicio) * 100) : 0;
 
         res.status(200).json({
             status: 200,
             data: {
                 semana: {
-                    inicio: inicioSemana.toISOString().split('T')[0],
-                    fin: finSemana.toISOString().split('T')[0]
+                    inicio: inicioStr,
+                    fin: finStr
                 },
                 dias: diasSemana,
                 estadisticas: {
-                    total_asistencias: diasPresentes,
-                    total_faltas: diasAusentes,
-                    porcentaje_asistencia: porcentajeAsistencia
-                }
+                    total_asistencias: diasConAsistencia,
+                    total_faltas: diasAusentesSemana,
+                    total_tardes: diasTardesSemana,
+                    porcentaje_asistencia: porcentajeAsistenciaGeneral
+                },
+                inicio_semestre: inicioSemestreStr
             }
         });
     } catch (error) {

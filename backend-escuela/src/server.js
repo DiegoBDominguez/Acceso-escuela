@@ -24,7 +24,7 @@ const localIP = getLocalIP();
 // app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Escuchar en todas las interfaces (0.0.0.0) para que funcione tanto localhost como IP
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, 'localhost', () => {
   console.log(`✅ Servidor backend corriendo en:`);
   console.log(`   📍 Local: http://localhost:${PORT}`);
   console.log(`   🌐 Red:   http://${localIP}:${PORT}`);

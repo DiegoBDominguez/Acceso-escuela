@@ -68,11 +68,11 @@ const obtenerAlumnos = async (req, res) => {
         // Obtener configuraciones para fechas de semestre
         const [settings] = await db.query('SELECT inicio_semestre, fin_semestre FROM configuraciones LIMIT 1');
         const inicioSemestre = settings[0]?.inicio_semestre;
-        const finSemestre = settings[0]?.fin_semestre;
+        const finSemestre = settings[0]?.fin_semestre || '2026-12-31'; // Usar fin de año por defecto si no está configurado
 
         let attendanceData = [];
 
-        if (inicioSemestre && finSemestre) {
+        if (inicioSemestre) {
             // Calcular días laborables del semestre (excluyendo fines de semana y días no laborables)
             const [workingDaysResult] = await db.query(`
                 SELECT COUNT(*) as total_dias_laborables FROM (
@@ -142,16 +142,16 @@ const obtenerAlumnos = async (req, res) => {
                        a.grado, a.grupo, a.turno, a.foto_url, u.activo,
                        ROUND(
                            IFNULL(
-                               (COUNT(CASE WHEN asis.estado = 'presente' THEN 1 END) / 
+                               (COUNT(CASE WHEN asis.estado IN ('presente', 'retardo') THEN 1 END) / 
                                 NULLIF(?, 0)) * 100, 
                                0
                            ), 1
                        ) as porcentaje_asistencia,
-                       COUNT(CASE WHEN asis.estado = 'presente' THEN 1 END) as dias_presentes,
+                       COUNT(CASE WHEN asis.estado IN ('presente', 'retardo') THEN 1 END) as dias_asistencias,
                        ? as total_dias_laborables
                 FROM alumnos a
                 INNER JOIN usuarios u ON a.usuario_id = u.id
-                LEFT JOIN asistencias asis ON a.usuario_id = asis.usuario_id 
+                LEFT JOIN asistencias asis ON a.id = asis.alumno_id 
                     AND DATE(asis.fecha) BETWEEN ? AND ?
                     AND DAYOFWEEK(asis.fecha) NOT IN (1, 7)  -- Excluir fines de semana
                     AND DATE(asis.fecha) NOT IN (SELECT fecha FROM dias_no_laborables)

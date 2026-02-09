@@ -35,6 +35,7 @@ const Login = () => {
         // 3. Guardar datos en localStorage
         localStorage.setItem('token', token);
         localStorage.setItem('usuario', JSON.stringify(usuario)); // Guardamos el objeto usuario
+        localStorage.setItem('firstLogin', 'true'); // Marcar como primer inicio de sesión
         
         const rol = usuario.rol; // Acceso correcto al rol
         

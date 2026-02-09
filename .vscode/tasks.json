@@ -1,0 +1,25 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Backend Server",
+			"type": "shell",
+			"command": "cd backend-escuela && node src/server.js"
+		},
+		{
+			"label": "Run Backend Server",
+			"type": "shell",
+			"command": "cd backend-escuela ; node src/server.js"
+		},
+		{
+			"label": "Run Backend Server",
+			"type": "shell",
+			"command": "node backend-escuela/src/server.js"
+		},
+		{
+			"label": "Start Backend",
+			"type": "shell",
+			"command": "node backend-escuela/src/server.js"
+		}
+	]
+}

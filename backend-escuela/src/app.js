@@ -25,6 +25,16 @@ app.get("/", (req, res) => {
   res.send("API Preparatoria funcionando 🚀");
 });
 
+app.get("/test-db", async (req, res) => {
+  try {
+    const db = require('./config/db');
+    const [rows] = await db.query('SELECT 1 as test');
+    res.send("Database connected: " + JSON.stringify(rows));
+  } catch (error) {
+    res.status(500).send("Database error: " + error.message);
+  }
+});
+
 // Rutas
 const authRoutes = require("./routes/auth.routes");
 app.use("/api/auth", authRoutes);
